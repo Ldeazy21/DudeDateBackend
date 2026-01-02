@@ -1,0 +1,336 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventType {
+  PUBLIC
+  PRIVATE
+}
+
+enum Role {
+  TEAM_OWNER
+  USER
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  EXCUSED
+  PENDING
+}
+
+enum TeamMemberRole {
+  PLAYER
+  ASSISTANT_COACH
+  STATISTICIAN
+  CAPTAIN
+}
+
+enum NotificationType {
+  EVENT
+  MATCH_SCHEDULE
+  INVITATION
+  ANNOUCEMENT
+}
+
+enum EventStatus {
+  PENDING // Event created, waiting for payment
+  PAID // Payment successful
+}
+
+model User {
+  id                  String  @id @default(uuid())
+  user_name           String
+  email               String  @unique
+  phone_number        String  @unique
+  password            String
+  profile_picture_url String?
+  role                Role    @default(USER)
+  stripe_customer_id  String?
+  account_number      String?
+  first_name          String?
+  last_name           String?
+
+  is_deleted  Boolean @default(false)
+  is_blocked  Boolean @default(false)
+  is_verified Boolean @default(false)
+
+  events                 Event[]
+  team_members           TeamMember[]
+  team                   Team[]
+  sent_notifications     Notification[]   @relation("sent_notifications")
+  received_notifications Notification[]   @relation("received_notifications")
+  team_invitation        TeamInvitation[]
+  announcements          Announcement[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([user_name, email])
+  @@map("users")
+}
+
+model Otp {
+  id          String   @id @default(uuid())
+  email       String
+  code        String
+  is_used     Boolean  @default(false)
+  is_verified Boolean  @default(false)
+  expire_at   String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("otp")
+}
+
+model Event {
+  id                  String      @id @default(uuid())
+  title               String
+  img_url             String
+  start_date          DateTime
+  end_date            DateTime
+  start_time          DateTime
+  end_time            DateTime
+  description         String
+  latitude            Float?
+  longitude           Float?
+  address             String?
+  user_id             String
+  event_fee           String?
+  type                EventType   @default(PUBLIC)
+  ticket_purchase_url String?
+  status              EventStatus @default(PENDING)
+  is_free             Boolean     @default(false)
+  phone_number        String?
+  payment_detail      String?
+
+  user        User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  notfication Notification[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([title])
+  @@map("event")
+}
+
+model Team {
+  id          String @id @default(uuid())
+  name        String @unique
+  type        String
+  description String
+  logo_url    String
+  owner_id    String
+
+  is_deleted Boolean @default(false)
+
+  team_members           TeamMember[]
+  first_match_schedules  MatchSchedule[] @relation("first_team")
+  second_match_schedules MatchSchedule[] @relation("second_team")
+
+  user           User             @relation(fields: [owner_id], references: [id], onDelete: Cascade)
+  notification   Notification[]
+  created_at     DateTime         @default(now())
+  updated_at     DateTime         @updatedAt
+  TeamInvitation TeamInvitation[]
+  announcements  Announcement[]
+  chat_room      ChatRoom?
+
+  @@index([name])
+  @@map("teams")
+}
+
+model TeamMember {
+  id String @id @default(uuid())
+
+  team_id          String
+  user_id          String
+  team_member_role TeamMemberRole @default(PLAYER)
+
+  team Team @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  is_removed Boolean @default(false)
+
+  top_performances_as_first_team          TopPerformer[]            @relation("top_performer_first_team")
+  top_performances_as_second_team         TopPerformer[]            @relation("top_performer_second_team")
+  match_schedule_from_first_team_members  MatchScheduleTeamMember[] @relation("match_schedule_from_first_team_members")
+  match_schedule_from_second_team_members MatchScheduleTeamMember[] @relation("match_schedule_from_second_team_members")
+  created_at                              DateTime                  @default(now())
+  updated_at                              DateTime                  @updatedAt
+  first_team_match_attendance             MatchAttendance[]         @relation("first_team_match_attendance")
+  second_team_match_attendance            MatchAttendance[]         @relation("second_team_match_attendance")
+
+  @@map("team_members")
+}
+
+model MatchSchedule {
+  id             String   @id @default(uuid())
+  start_time     String
+  end_time       String
+  start_date     DateTime
+  end_data       DateTime
+  latitude       Float?
+  longitude      Float?
+  address        String?
+  match_fee      String
+  description    String
+  first_team_id  String
+  second_team_id String
+
+  match_result MatchResult? @relation("match_schedule_result")
+  first_team   Team         @relation("first_team", fields: [first_team_id], references: [id])
+  second_team  Team         @relation("second_team", fields: [second_team_id], references: [id])
+
+  match_schedule_team_members MatchScheduleTeamMember[]
+  notification                Notification[]
+  created_at                  DateTime                  @default(now())
+  updated_at                  DateTime                  @updatedAt
+
+  @@map("match_schedule")
+}
+
+model MatchScheduleTeamMember {
+  id                String @id @default(uuid())
+  match_schedule_id String
+
+  match_schedule MatchSchedule @relation(fields: [match_schedule_id], references: [id], onDelete: Cascade)
+
+  first_team_members  TeamMember[] @relation("match_schedule_from_first_team_members")
+  second_team_members TeamMember[] @relation("match_schedule_from_second_team_members")
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("match_schedule_team_member")
+}
+
+model MatchResult {
+  id                      String @id @default(uuid())
+  final_first_team_score  Int
+  final_second_team_score Int
+  highlights              String
+  match_schedule_id       String @unique
+
+  top_performers   TopPerformer[]
+  match_attendance MatchAttendance[]
+  match_schedule   MatchSchedule     @relation("match_schedule_result", fields: [match_schedule_id], references: [id], onDelete: Cascade)
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @updatedAt
+
+  @@map("match_result")
+}
+
+model TopPerformer {
+  id String @id @default(uuid())
+
+  match_result_id String
+
+  match_result        MatchResult  @relation(fields: [match_result_id], references: [id], onDelete: Cascade)
+  first_team_members  TeamMember[] @relation("top_performer_first_team")
+  second_team_members TeamMember[] @relation("top_performer_second_team")
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("top_performer")
+}
+
+model MatchAttendance {
+  id     String           @id @default(uuid())
+  status AttendanceStatus @default(PENDING)
+
+  first_team_member_id  String?
+  second_team_member_id String?
+  match_result_id       String
+  match_result          MatchResult @relation(fields: [match_result_id], references: [id], onDelete: Cascade)
+
+  first_team_members  TeamMember? @relation("first_team_match_attendance", fields: [first_team_member_id], references: [id])
+  second_team_members TeamMember? @relation("second_team_match_attendance", fields: [second_team_member_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("match_attendance")
+}
+
+model Notification {
+  id String @id @default(uuid())
+
+  title              String?
+  message            String?
+  sender_id          String?
+  user_id            String
+  is_read            Boolean          @default(false)
+  type               NotificationType
+  event_id           String?
+  team_id            String?
+  team_invitation_id String?
+
+  match_schedule_id String?
+  annoucement_id    String?
+  match_schedule    MatchSchedule? @relation(fields: [match_schedule_id], references: [id], onDelete: Cascade)
+  event             Event?         @relation(fields: [event_id], references: [id], onDelete: Cascade)
+
+  sender          User?           @relation("sent_notifications", fields: [sender_id], references: [id], onDelete: Cascade)
+  receiver        User            @relation("received_notifications", fields: [user_id], references: [id], onDelete: Cascade)
+  team            Team?           @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  team_invitation TeamInvitation? @relation(fields: [team_invitation_id], references: [id], onDelete: Cascade)
+  anncouncement   Announcement?   @relation(fields: [annoucement_id], references: [id], onDelete: Cascade)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("notifications")
+}
+
+model TeamInvitation {
+  id      String  @id @default(uuid())
+  email   String?
+  team_id String
+  team    Team    @relation(fields: [team_id], references: [id])
+
+  receiver_id String?
+  receiver    User?   @relation(fields: [receiver_id], references: [id], onDelete: Cascade)
+  is_accepted Boolean @default(false)
+
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @updatedAt()
+  notification Notification[]
+
+  @@map("team_invitations")
+}
+
+model Announcement {
+  id          String @id @default(uuid())
+  subject     String
+  description String
+  user_id     String
+  user        User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  teams        Team[]
+  notification Notification[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt()
+
+  @@index([subject])
+  @@map("annoucements")
+}
+
+model ChatRoom {
+  id String @id @default(uuid())
+
+  team_id String @unique
+  team    Team   @relation(fields: [team_id], references: [id], onDelete: Cascade)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt()
+
+  @@map("chat_rooms")
+}

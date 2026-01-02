@@ -1,0 +1,52 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <title>Event Created Successfully</title>
+    <style>
+      body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color:
+      #f8f9fa; color: #333; padding: 40px; } .email-container { max-width:
+      600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1); overflow: hidden; } .header {
+      background-color: #f8bd2a; color: #ffffff; text-align: center; padding:
+      20px; } .content { padding: 30px; } .content h2 { color: #007bff;
+      margin-bottom: 10px; } .event-details { margin-top: 20px; border-top: 1px
+      solid #ddd; padding-top: 15px; } .event-details p { margin: 6px 0; }
+      .footer { text-align: center; padding: 15px; font-size: 13px; color: #888;
+      border-top: 1px solid #eee; } .btn { display: inline-block;
+      background-color: #007bff; color: #fff !important; padding: 10px 20px;
+      border-radius: 6px; text-decoration: none; margin-top: 20px; } .btn:hover
+      { background-color: #0056b3; }
+    </style>
+  </head>
+
+  <body>
+    <div class='email-container'>
+      <div class='header'>
+        <h1>🎉 Event Created Successfully!</h1>
+      </div>
+      <div class='content'>
+        <p>Hi <strong>{{data.user_name}}</strong>,</p>
+
+        <p>
+          Great news! Your event
+          <strong>{{data.event_title}}</strong>
+          has been successfully created.
+        </p>
+
+        <div class='event-details'>
+          <h2>Event Details</h2>
+          <p><strong>Start Date:</strong> {{data.event_date}}</p>
+          <p><strong>Start Time:</strong> {{data.event_time}}</p>
+          <p><strong>Location:</strong> {{data.event_location}}</p>
+          <p><strong>Type:</strong> {{data.event_type}}</p>
+          {{!-- <p><strong>Event Fee:</strong> {{data.event_fee}}</p> --}}
+        </div>
+
+      </div>
+
+      <div class='footer'>
+        <p>Thank you for using DawgPound Events!</p>
+      </div>
+    </div>
+  </body>
+</html>

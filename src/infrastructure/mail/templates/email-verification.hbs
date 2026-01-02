@@ -1,0 +1,28 @@
+<html>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <style>
+      body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin:
+      0; padding: 0; } .container { max-width: 500px; margin: 20px auto;
+      background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0
+      10px rgba(0, 0, 0, 0.1); text-align: center; } .header { font-size: 22px;
+      font-weight: bold; color: #333; } .otp { font-size: 24px; font-weight:
+      bold; color: #2c3e50; background: #f3f3f3; display: inline-block; padding:
+      10px 20px; border-radius: 5px; margin: 20px 0; } .message { font-size:
+      16px; color: #666; } .footer { margin-top: 20px; font-size: 14px; color:
+      #888; } .footer a { color: #3498db; text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <p class='header'>Your One-Time Password (OTP)</p>
+      <p class='message'>
+        Use the following OTP to complete your verification process. The OTP is
+        valid for 1 minute.
+      </p>
+      <p class='otp'>{{data.otp}}</p>
+      <p class='message'>If you did not request this, please ignore this email.</p>
+    </div>
+  </body>
+</html>
